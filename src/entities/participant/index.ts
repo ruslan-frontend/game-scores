@@ -1,1 +1,1 @@
-export { ParticipantModel } from './model';
+export { SupabaseParticipantModel as ParticipantModel } from './supabase-model';

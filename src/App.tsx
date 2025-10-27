@@ -4,7 +4,6 @@ import { Layout } from './shared/ui';
 import { MainPage } from './pages/main';
 import { initTelegramWebApp } from './app/telegram';
 import { AuthService } from './shared/lib/auth';
-import { migrateToSupabase } from './shared/lib/data-adapter';
 import 'antd/dist/reset.css';
 
 function App() {
@@ -12,14 +11,11 @@ function App() {
     const initApp = async () => {
       initTelegramWebApp();
       
-      // Пытаемся аутентифицировать пользователя
+      // Аутентифицируем пользователя для работы с Supabase
       try {
         await AuthService.getCurrentUser();
-        
-        // Автоматически мигрируем данные если нужно
-        await migrateToSupabase();
       } catch (error) {
-        console.warn('Authentication or migration failed:', error);
+        console.warn('Authentication failed:', error);
       }
     };
 

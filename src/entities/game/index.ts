@@ -1,1 +1,1 @@
-export { GameModel } from './model';
+export { SupabaseGameModel as GameModel } from './supabase-model';
