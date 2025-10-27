@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { List, Button, Typography, Card, Popconfirm, Space } from 'antd';
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import { ParticipantModel } from '../../entities/participant';
+import { ParticipantAdapter } from '../../shared/lib/data-adapter';
 import { EditParticipant } from '../../features/edit-participant';
 import { ParticipantAvatar } from '../../shared/ui';
 import type { Participant } from '../../shared/types';
@@ -16,16 +16,17 @@ interface ParticipantsListProps {
 export const ParticipantsList: React.FC<ParticipantsListProps> = ({ refreshTrigger }) => {
   const [participants, setParticipants] = useState<Participant[]>([]);
 
-  const loadParticipants = () => {
-    setParticipants(ParticipantModel.getAll());
+  const loadParticipants = async () => {
+    const data = await ParticipantAdapter.getAll();
+    setParticipants(data);
   };
 
   useEffect(() => {
     loadParticipants();
   }, [refreshTrigger]);
 
-  const handleDelete = (id: string) => {
-    ParticipantModel.delete(id);
+  const handleDelete = async (id: string) => {
+    await ParticipantAdapter.delete(id);
     loadParticipants();
   };
 

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { List, Button, Typography, Card, Popconfirm, Tag, Space, Avatar } from 'antd';
 import { DeleteOutlined, TrophyOutlined } from '@ant-design/icons';
-import { GameModel } from '../../entities/game';
-import { ParticipantModel } from '../../entities/participant';
+import { GameAdapter, ParticipantAdapter } from '../../shared/lib/data-adapter';
 import { ParticipantAvatar } from '../../shared/ui';
 import type { Game } from '../../shared/types';
 import { formatDate } from '../../shared/lib';
@@ -15,22 +14,32 @@ interface GamesListProps {
 
 export const GamesList: React.FC<GamesListProps> = ({ refreshTrigger }) => {
   const [games, setGames] = useState<Game[]>([]);
+  const [participants, setParticipants] = useState<Map<string, any>>(new Map());
 
-  const loadGames = () => {
-    setGames(GameModel.getAll().sort((a, b) => b.date.getTime() - a.date.getTime()));
+  const loadData = async () => {
+    const [gamesData, participantsData] = await Promise.all([
+      GameAdapter.getAll(),
+      ParticipantAdapter.getAll()
+    ]);
+    
+    setGames(gamesData.sort((a, b) => b.date.getTime() - a.date.getTime()));
+    
+    const participantsMap = new Map();
+    participantsData.forEach(p => participantsMap.set(p.id, p));
+    setParticipants(participantsMap);
   };
 
   useEffect(() => {
-    loadGames();
+    loadData();
   }, [refreshTrigger]);
 
-  const handleDelete = (id: string) => {
-    GameModel.delete(id);
-    loadGames();
+  const handleDelete = async (id: string) => {
+    await GameAdapter.delete(id);
+    loadData();
   };
 
   const getParticipant = (id: string) => {
-    return ParticipantModel.findById(id);
+    return participants.get(id);
   };
 
   const getParticipantName = (id: string) => {

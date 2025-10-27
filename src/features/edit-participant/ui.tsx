@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Form, Input, Button, message, Space, ColorPicker } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import type { Color } from 'antd/es/color-picker';
-import { ParticipantModel } from '../../entities/participant';
+import { ParticipantAdapter } from '../../shared/lib/data-adapter';
 import { ParticipantAvatar } from '../../shared/ui';
 import { AVATAR_COLORS } from '../../shared/lib';
 import type { Participant } from '../../shared/types';
@@ -43,7 +43,7 @@ export const EditParticipant: React.FC<EditParticipantProps> = ({
 
     setLoading(true);
     try {
-      const success = ParticipantModel.update(participant.id, {
+      const success = await ParticipantAdapter.update(participant.id, {
         name: values.name.trim(),
         color: selectedColor
       });

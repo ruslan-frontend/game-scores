@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button, Input, Form, message } from 'antd';
 import { UserAddOutlined } from '@ant-design/icons';
-import { ParticipantModel } from '../../entities/participant';
+import { ParticipantAdapter } from '../../shared/lib/data-adapter';
 
 interface AddParticipantProps {
   onSuccess?: () => void;
@@ -19,7 +19,7 @@ export const AddParticipant: React.FC<AddParticipantProps> = ({ onSuccess }) => 
 
     setLoading(true);
     try {
-      ParticipantModel.create(values.name);
+      await ParticipantAdapter.create(values.name);
       message.success('Участник добавлен');
       form.resetFields();
       onSuccess?.();

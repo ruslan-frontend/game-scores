@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Card, Typography, Progress, Tabs, Badge, Space } from 'antd';
 import { TrophyOutlined, TeamOutlined } from '@ant-design/icons';
-import { GameModel } from '../../entities/game';
-import { ParticipantModel } from '../../entities/participant';
+import { GameAdapter, ParticipantAdapter } from '../../shared/lib/data-adapter';
 import { ParticipantAvatar } from '../../shared/ui';
 import type { GameStatistics, GameByTitle } from '../../shared/types';
 
@@ -13,13 +12,20 @@ interface StatisticsDashboardProps {
 export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ refreshTrigger }) => {
   const [statistics, setStatistics] = useState<GameStatistics[]>([]);
   const [gameStatistics, setGameStatistics] = useState<GameByTitle[]>([]);
+  const [participants, setParticipants] = useState<Map<string, any>>(new Map());
 
-  const loadStatistics = () => {
-    const stats = GameModel.getStatistics();
+  const loadStatistics = async () => {
+    const [stats, gameStats, participantsData] = await Promise.all([
+      GameAdapter.getStatistics(),
+      GameAdapter.getStatisticsByGames(),
+      ParticipantAdapter.getAll()
+    ]);
     setStatistics(stats.sort((a, b) => b.winPercentage - a.winPercentage));
-    
-    const gameStats = GameModel.getStatisticsByGames();
     setGameStatistics(gameStats);
+    
+    const participantsMap = new Map();
+    participantsData.forEach(p => participantsMap.set(p.id, p));
+    setParticipants(participantsMap);
   };
 
   useEffect(() => {
@@ -31,7 +37,7 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ refres
       title: 'Участник',
       key: 'participantName',
       render: (_: unknown, record: GameStatistics) => {
-        const participant = ParticipantModel.findById(record.participantId);
+        const participant = participants.get(record.participantId);
         return (
           <Space>
             {participant && (
@@ -80,7 +86,7 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ refres
       title: 'Участник',
       key: 'participantName',
       render: (_: unknown, record: GameStatistics) => {
-        const participant = ParticipantModel.findById(record.participantId);
+        const participant = participants.get(record.participantId);
         return (
           <Space>
             {participant && (

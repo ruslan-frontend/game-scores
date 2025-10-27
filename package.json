@@ -11,6 +11,7 @@
     "deploy": "npm run build && gh-pages -d dist"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.76.1",
     "@telegram-apps/sdk": "^3.11.8",
     "antd": "^5.27.6",
     "react": "^19.1.1",

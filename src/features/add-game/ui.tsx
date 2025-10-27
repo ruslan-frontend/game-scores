@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Input, Form, Select, message, Checkbox, Tag, Space } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
-import { GameModel } from '../../entities/game';
-import { ParticipantModel } from '../../entities/participant';
+import { GameAdapter, ParticipantAdapter } from '../../shared/lib/data-adapter';
 
 interface AddGameProps {
   onSuccess?: () => void;
@@ -11,8 +10,20 @@ interface AddGameProps {
 export const AddGame: React.FC<AddGameProps> = ({ onSuccess }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [participants] = useState(() => ParticipantModel.getAll());
-  const [gameTitles] = useState(() => GameModel.getUniqueGameTitles());
+  const [participants, setParticipants] = useState<any[]>([]);
+  const [gameTitles, setGameTitles] = useState<string[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const [participantsData, titlesData] = await Promise.all([
+        ParticipantAdapter.getAll(),
+        GameAdapter.getUniqueGameTitles()
+      ]);
+      setParticipants(participantsData);
+      setGameTitles(titlesData);
+    };
+    loadData();
+  }, []);
   const [customGameName, setCustomGameName] = useState('');
 
   const handleGameTitleSelect = (title: string) => {
@@ -48,7 +59,7 @@ export const AddGame: React.FC<AddGameProps> = ({ onSuccess }) => {
 
     setLoading(true);
     try {
-      GameModel.create(gameName, values.winnerId, values.participants);
+      await GameAdapter.create(gameName, values.winnerId, values.participants);
       message.success('Игра добавлена');
       form.resetFields();
       setCustomGameName('');
