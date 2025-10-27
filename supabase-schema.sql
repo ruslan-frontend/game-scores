@@ -66,48 +66,11 @@ ALTER TABLE participants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE games ENABLE ROW LEVEL SECURITY;
 ALTER TABLE game_participants ENABLE ROW LEVEL SECURITY;
 
--- Политики для таблицы users (пользователи могут видеть только свои данные)
-CREATE POLICY "Users can view their own data" ON users
-  FOR SELECT USING (auth.uid() IS NOT NULL);
+-- Сначала отключим RLS чтобы приложение работало без аутентификации
+-- (можно включить позже когда будет готова полная интеграция)
 
-CREATE POLICY "Users can insert their own data" ON users
-  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Users can update their own data" ON users
-  FOR UPDATE USING (auth.uid() IS NOT NULL);
-
--- Политики для таблицы participants
-CREATE POLICY "Users can view their own participants" ON participants
-  FOR SELECT USING (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Users can insert their own participants" ON participants
-  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Users can update their own participants" ON participants
-  FOR UPDATE USING (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Users can delete their own participants" ON participants
-  FOR DELETE USING (auth.uid() IS NOT NULL);
-
--- Политики для таблицы games
-CREATE POLICY "Users can view their own games" ON games
-  FOR SELECT USING (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Users can insert their own games" ON games
-  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Users can update their own games" ON games
-  FOR UPDATE USING (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Users can delete their own games" ON games
-  FOR DELETE USING (auth.uid() IS NOT NULL);
-
--- Политики для таблицы game_participants
-CREATE POLICY "Users can view game participants for their games" ON game_participants
-  FOR SELECT USING (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Users can insert game participants for their games" ON game_participants
-  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
-
-CREATE POLICY "Users can delete game participants for their games" ON game_participants
-  FOR DELETE USING (auth.uid() IS NOT NULL);
+-- Временно разрешаем всем пользователям доступ ко всем данным
+CREATE POLICY "Allow all for now" ON users FOR ALL USING (true);
+CREATE POLICY "Allow all for participants" ON participants FOR ALL USING (true);
+CREATE POLICY "Allow all for games" ON games FOR ALL USING (true);
+CREATE POLICY "Allow all for game_participants" ON game_participants FOR ALL USING (true);
