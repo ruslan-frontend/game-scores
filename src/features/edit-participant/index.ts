@@ -1,0 +1,1 @@
+export { EditParticipant } from './ui';
