@@ -8,11 +8,13 @@ export class SupabaseParticipantModel {
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
+      
+      const context = AuthService.getCurrentContext();
 
       const { data, error } = await supabase
         .from('participants')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('context_id', context.contextId)
         .order('created_at', { ascending: true });
 
       if (error) throw error;
@@ -28,13 +30,15 @@ export class SupabaseParticipantModel {
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
-
+      
+      const context = AuthService.getCurrentContext();
       const validatedColor = color && isValidColor(color) ? normalizeColor(color) : getRandomColor();
 
       const { data, error } = await supabase
         .from('participants')
         .insert({
           user_id: user.id,
+          context_id: context.contextId,
           name: name.trim(),
           color: validatedColor,
         })
@@ -54,6 +58,8 @@ export class SupabaseParticipantModel {
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
+      
+      const context = AuthService.getCurrentContext();
 
       // Validate color if provided
       const processedUpdates: any = { ...updates };
@@ -67,7 +73,7 @@ export class SupabaseParticipantModel {
         .from('participants')
         .update(processedUpdates)
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('context_id', context.contextId);
 
       if (error) throw error;
 
@@ -82,12 +88,14 @@ export class SupabaseParticipantModel {
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
+      
+      const context = AuthService.getCurrentContext();
 
       const { error } = await supabase
         .from('participants')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('context_id', context.contextId);
 
       if (error) throw error;
 
@@ -102,12 +110,14 @@ export class SupabaseParticipantModel {
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
+      
+      const context = AuthService.getCurrentContext();
 
       const { data, error } = await supabase
         .from('participants')
         .select('*')
         .eq('id', id)
-        .eq('user_id', user.id)
+        .eq('context_id', context.contextId)
         .single();
 
       if (error) throw error;
@@ -122,7 +132,7 @@ export class SupabaseParticipantModel {
   private static mapToParticipant(data: any): Participant {
     return {
       id: data.id,
-      userId: data.user_id,
+      contextId: data.context_id,
       name: data.name,
       color: data.color,
       createdAt: new Date(data.created_at),

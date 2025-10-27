@@ -1,9 +1,10 @@
 import { supabase } from '../config/supabase';
-import { getTelegramUser } from '../../app/telegram';
-import type { User } from '../types';
+import { getTelegramUser, getTelegramContext } from '../../app/telegram';
+import type { User, TelegramContext } from '../types';
 
 export class AuthService {
   private static currentUser: User | null = null;
+  private static currentContext: TelegramContext | null = null;
 
   static async getCurrentUser(): Promise<User | null> {
     if (this.currentUser) {
@@ -11,16 +12,19 @@ export class AuthService {
     }
 
     try {
-      // Для тестирования создаем фиктивного пользователя
-      const telegramUser = getTelegramUser();
-      const testUserId = telegramUser?.id || 12345; // Используем реальный ID или тестовый
+      // Получаем контекст Telegram
+      const context = getTelegramContext();
+      this.currentContext = context;
+      
+      const telegramUser = context.user;
+      const testUserId = telegramUser?.id || 12345;
       
       // Проверяем существует ли пользователь в базе
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
         .eq('telegram_id', testUserId)
-        .maybeSingle(); // maybeSingle вместо single для избежания ошибок
+        .maybeSingle();
 
       if (fetchError) {
         console.error('Error fetching user:', fetchError);
@@ -30,10 +34,8 @@ export class AuthService {
       let user: User;
 
       if (existingUser) {
-        // Пользователь существует
         user = this.mapToUser(existingUser);
       } else {
-        // Создаем нового пользователя
         const { data: newUser, error: createError } = await supabase
           .from('users')
           .insert({
@@ -53,14 +55,16 @@ export class AuthService {
         user = this.mapToUser(newUser);
       }
 
-      // Сохраняем пользователя в сессии
       this.currentUser = user;
-      
       return user;
     } catch (error) {
       console.error('Error authenticating user:', error);
       return null;
     }
+  }
+
+  static getCurrentContext(): TelegramContext {
+    return this.currentContext || getTelegramContext();
   }
 
   static async signOut(): Promise<void> {

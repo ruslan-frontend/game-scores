@@ -39,6 +39,13 @@ declare global {
             username?: string;
             language_code?: string;
           };
+          chat?: {
+            id: number;
+            type: 'private' | 'group' | 'supergroup' | 'channel';
+            title?: string;
+            username?: string;
+          };
+          start_param?: string;
         };
         version: string;
         platform: string;
@@ -73,4 +80,42 @@ export const getTelegramUser = () => {
     return window.Telegram.WebApp.initDataUnsafe.user;
   }
   return null;
+};
+
+export const getTelegramChat = () => {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+    return window.Telegram.WebApp.initDataUnsafe.chat;
+  }
+  return null;
+};
+
+export const getTelegramContext = () => {
+  if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+    const { user, chat } = window.Telegram.WebApp.initDataUnsafe;
+    
+    // Определяем контекст для данных:
+    // - Если есть chat и это группа - используем chat.id
+    // - Если это приватный чат или нет chat - используем user.id
+    const contextId = chat && ['group', 'supergroup'].includes(chat.type) 
+      ? chat.id.toString() 
+      : user?.id.toString() || 'default';
+    
+    const contextType = chat && ['group', 'supergroup'].includes(chat.type) 
+      ? 'group' as const
+      : 'private' as const;
+    
+    return {
+      contextId,
+      contextType,
+      user: user || null,
+      chat: chat || null
+    };
+  }
+  
+  return {
+    contextId: 'default',
+    contextType: 'private' as const,
+    user: null,
+    chat: null
+  };
 };

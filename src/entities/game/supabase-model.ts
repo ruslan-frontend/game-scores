@@ -9,6 +9,8 @@ export class SupabaseGameModel {
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
+      
+      const context = AuthService.getCurrentContext();
 
       const { data, error } = await supabase
         .from('games')
@@ -16,7 +18,7 @@ export class SupabaseGameModel {
           *,
           game_participants!inner(participant_id)
         `)
-        .eq('user_id', user.id)
+        .eq('context_id', context.contextId)
         .order('date', { ascending: false });
 
       if (error) throw error;
@@ -32,12 +34,15 @@ export class SupabaseGameModel {
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
+      
+      const context = AuthService.getCurrentContext();
 
       // Создаем игру
       const { data: gameData, error: gameError } = await supabase
         .from('games')
         .insert({
           user_id: user.id,
+          context_id: context.contextId,
           name: name.trim(),
           winner_id: winnerId,
         })
@@ -50,6 +55,7 @@ export class SupabaseGameModel {
       const gameParticipants = participantIds.map(participantId => ({
         game_id: gameData.id,
         participant_id: participantId,
+        context_id: context.contextId,
       }));
 
       const { error: participantsError } = await supabase
@@ -72,11 +78,13 @@ export class SupabaseGameModel {
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
+      
+      const context = AuthService.getCurrentContext();
 
       const { data, error } = await supabase
         .from('games')
         .select('name')
-        .eq('user_id', user.id);
+        .eq('context_id', context.contextId);
 
       if (error) throw error;
 
@@ -167,12 +175,15 @@ export class SupabaseGameModel {
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
+      
+      const context = AuthService.getCurrentContext();
 
       // Сначала удаляем связи с участниками
       const { error: participantsError } = await supabase
         .from('game_participants')
         .delete()
-        .eq('game_id', id);
+        .eq('game_id', id)
+        .eq('context_id', context.contextId);
 
       if (participantsError) throw participantsError;
 
@@ -181,7 +192,7 @@ export class SupabaseGameModel {
         .from('games')
         .delete()
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('context_id', context.contextId);
 
       if (gameError) throw gameError;
 
@@ -197,7 +208,7 @@ export class SupabaseGameModel {
     
     return {
       id: data.id,
-      userId: data.user_id,
+      contextId: data.context_id,
       name: data.name,
       date: new Date(data.date),
       winnerId: data.winner_id,
