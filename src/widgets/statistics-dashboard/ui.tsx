@@ -46,12 +46,12 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ refres
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="general" className="w-full">
-          <TabsList className="mb-4 grid w-full grid-cols-2 border-2 border-slate-900 bg-slate-200">
-            <TabsTrigger value="general" className="gap-1.5 font-semibold">
+          <TabsList className="mb-4 flex h-auto min-h-11 w-full items-stretch border-2 border-slate-900 bg-slate-200 p-1">
+            <TabsTrigger value="general" className="h-9 w-1/2 gap-2 rounded-md px-3 py-0 font-semibold whitespace-nowrap">
               <Users />
               Общая
             </TabsTrigger>
-            <TabsTrigger value="byGames" className="gap-1.5 font-semibold">
+            <TabsTrigger value="byGames" className="h-9 w-1/2 gap-2 rounded-md px-3 py-0 font-semibold whitespace-nowrap">
               <Trophy />
               По играм
             </TabsTrigger>
@@ -85,7 +85,9 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ refres
                                 <ParticipantAvatar
                                   name={participant.name}
                                   color={participant.color}
+                                  avatarUrl={participant.avatarUrl}
                                   size={28}
+                                  shape="square"
                                 />
                               )}
                               <span className="font-semibold">{record.participantName}</span>
@@ -115,7 +117,9 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ refres
                           <ParticipantAvatar
                             name={participant.name}
                             color={participant.color}
+                            avatarUrl={participant.avatarUrl}
                             size={24}
+                            shape="square"
                           />
                         )}
                         <span className="font-semibold">{record.participantName}</span>
@@ -171,7 +175,9 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ refres
                                       <ParticipantAvatar
                                         name={participant.name}
                                         color={participant.color}
+                                        avatarUrl={participant.avatarUrl}
                                         size={24}
+                                        shape="square"
                                       />
                                     )}
                                     <span className="font-semibold">{record.participantName}</span>
@@ -201,7 +207,9 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ refres
                                   <ParticipantAvatar
                                     name={participant.name}
                                     color={participant.color}
+                                    avatarUrl={participant.avatarUrl}
                                     size={24}
+                                    shape="square"
                                   />
                                 )}
                                 <span className="font-semibold">{record.participantName}</span>

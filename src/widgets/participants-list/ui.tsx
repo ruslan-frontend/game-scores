@@ -60,6 +60,7 @@ export const ParticipantsList: React.FC<ParticipantsListProps> = ({ refreshTrigg
                 <ParticipantAvatar
                   name={participant.name}
                   color={participant.color}
+                  avatarUrl={participant.avatarUrl}
                   size={40}
                   shape="square"
                 />

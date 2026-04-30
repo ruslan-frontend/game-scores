@@ -73,6 +73,20 @@ body {
   color: #0f172a;
 }
 
+.pixel-file-trigger {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  border: 2px solid #0f172a;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0f172a;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
 .pixel-button {
   min-height: 42px;
   border: 2px solid #0f172a;

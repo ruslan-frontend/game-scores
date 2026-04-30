@@ -117,6 +117,7 @@ export const GamesList: React.FC<GamesListProps> = ({ refreshTrigger }) => {
                           key={participantId}
                           name={participant.name}
                           color={participant.color}
+                          avatarUrl={participant.avatarUrl}
                           size={24}
                           shape="square"
                         />

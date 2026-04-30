@@ -26,14 +26,47 @@ export const EditParticipant: React.FC<EditParticipantProps> = ({
   const [selectedColor, setSelectedColor] = useState(participant.color);
   const [previewName, setPreviewName] = useState(participant.name);
   const [name, setName] = useState(participant.name);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [previewAvatarUrl, setPreviewAvatarUrl] = useState<string | undefined>(participant.avatarUrl);
+  const fileInputId = `edit-participant-avatar-file-${participant.id}`;
 
   useEffect(() => {
     if (visible) {
       setName(participant.name);
       setSelectedColor(participant.color);
       setPreviewName(participant.name);
+      setAvatarFile(null);
+      setPreviewAvatarUrl(participant.avatarUrl);
     }
   }, [visible, participant]);
+
+  useEffect(() => {
+    if (!avatarFile) return;
+    const objectUrl = URL.createObjectURL(avatarFile);
+    setPreviewAvatarUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [avatarFile]);
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] ?? null;
+    if (!file) {
+      setAvatarFile(null);
+      setPreviewAvatarUrl(participant.avatarUrl);
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      toast.error('Можно загрузить только изображение');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error('Максимальный размер аватарки 3MB');
+      event.target.value = '';
+      return;
+    }
+
+    setAvatarFile(file);
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -45,9 +78,20 @@ export const EditParticipant: React.FC<EditParticipantProps> = ({
 
     setLoading(true);
     try {
+      let avatarUrl = participant.avatarUrl;
+      if (avatarFile) {
+        const uploadedAvatarUrl = await ParticipantAdapter.uploadAvatar(participant.id, avatarFile);
+        if (uploadedAvatarUrl) {
+          avatarUrl = uploadedAvatarUrl;
+        } else {
+          toast.error('Не удалось загрузить новую аватарку');
+        }
+      }
+
       const success = await ParticipantAdapter.update(participant.id, {
         name: trimmedName,
-        color: selectedColor
+        color: selectedColor,
+        avatarUrl,
       });
       
       if (success) {
@@ -94,6 +138,7 @@ export const EditParticipant: React.FC<EditParticipantProps> = ({
               <ParticipantAvatar
                 name={previewName}
                 color={selectedColor}
+                avatarUrl={previewAvatarUrl}
                 size={64}
               />
             </div>
@@ -107,6 +152,23 @@ export const EditParticipant: React.FC<EditParticipantProps> = ({
                 value={name}
                 onChange={handleNameChange}
               />
+            </div>
+
+            <div className="pixel-form">
+              <label className="pixel-label">Фото участника</label>
+              <input
+                id={fileInputId}
+                className="sr-only"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+              />
+              <label htmlFor={fileInputId} className="pixel-file-trigger">
+                Выбрать изображение
+              </label>
+              <span className="pixel-row-subtitle">
+                {avatarFile ? avatarFile.name : 'Файл не выбран'}
+              </span>
             </div>
 
             <div className="pixel-form">

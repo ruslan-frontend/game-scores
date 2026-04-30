@@ -21,11 +21,13 @@ const AvatarWrapper = styled.div<AvatarWrapperProps>`
   font-size: ${props => props.$size * 0.4}px;
   flex-shrink: 0;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 `;
 
 interface ParticipantAvatarProps {
   name: string;
   color: string;
+  avatarUrl?: string;
   size?: number;
   shape?: 'circle' | 'square';
   className?: string;
@@ -34,6 +36,7 @@ interface ParticipantAvatarProps {
 export const ParticipantAvatar: React.FC<ParticipantAvatarProps> = ({
   name,
   color,
+  avatarUrl,
   size = 40,
   shape = 'circle',
   className
@@ -45,7 +48,15 @@ export const ParticipantAvatar: React.FC<ParticipantAvatarProps> = ({
       $shape={shape}
       className={className}
     >
-      {getInitials(name)}
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt={name}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+        />
+      ) : (
+        getInitials(name)
+      )}
     </AvatarWrapper>
   );
 };

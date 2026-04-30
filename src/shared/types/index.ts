@@ -13,6 +13,7 @@ export interface Participant {
   contextId?: string; // Group or user context
   name: string;
   color: string;
+  avatarUrl?: string;
   createdAt: Date;
   updatedAt?: Date;
 }

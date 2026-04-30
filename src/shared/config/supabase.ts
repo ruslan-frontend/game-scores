@@ -57,6 +57,7 @@ export interface Database {
           context_id: string | null;
           name: string;
           color: string;
+          avatar_url: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -66,6 +67,7 @@ export interface Database {
           context_id?: string | null;
           name: string;
           color?: string;
+          avatar_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -75,6 +77,7 @@ export interface Database {
           context_id?: string | null;
           name?: string;
           color?: string;
+          avatar_url?: string | null;
           created_at?: string;
           updated_at?: string;
         };

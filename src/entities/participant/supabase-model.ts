@@ -5,6 +5,34 @@ import { isMockMode, mockStore } from '../../shared/lib/mock-store';
 import type { Participant } from '../../shared/types';
 
 export class SupabaseParticipantModel {
+  static async uploadAvatar(participantId: string, file: File): Promise<string | null> {
+    if (isMockMode()) {
+      return URL.createObjectURL(file);
+    }
+
+    try {
+      const authUser = await supabase.auth.getUser();
+      const authUserId = authUser.data.user?.id;
+      if (!authUserId) {
+        throw new Error('Auth session is required to upload avatar');
+      }
+
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `${authUserId}/${participantId}/${crypto.randomUUID()}-${sanitizedName}`;
+      const { error: uploadError } = await supabase.storage
+        .from('participant-avatars')
+        .upload(filePath, file, { cacheControl: '3600', upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('participant-avatars').getPublicUrl(filePath);
+      return data.publicUrl;
+    } catch (error) {
+      console.error('Error uploading participant avatar:', error);
+      return null;
+    }
+  }
+
   static async getAll(): Promise<Participant[]> {
     if (isMockMode()) {
       return mockStore.getParticipants();
@@ -31,10 +59,10 @@ export class SupabaseParticipantModel {
     }
   }
 
-  static async create(name: string, color?: string): Promise<Participant | null> {
+  static async create(name: string, color?: string, avatarUrl?: string): Promise<Participant | null> {
     if (isMockMode()) {
       const validatedColor = color && isValidColor(color) ? normalizeColor(color) : getRandomColor();
-      return mockStore.createParticipant(name.trim(), validatedColor);
+      return mockStore.createParticipant(name.trim(), validatedColor, avatarUrl);
     }
 
     try {
@@ -51,6 +79,7 @@ export class SupabaseParticipantModel {
           context_id: context.contextId,
           name: name.trim(),
           color: validatedColor,
+          avatar_url: avatarUrl ?? null,
         })
         .select()
         .single();
@@ -64,9 +93,9 @@ export class SupabaseParticipantModel {
     }
   }
 
-  static async update(id: string, updates: Partial<Pick<Participant, 'name' | 'color'>>): Promise<boolean> {
+  static async update(id: string, updates: Partial<Pick<Participant, 'name' | 'color' | 'avatarUrl'>>): Promise<boolean> {
     if (isMockMode()) {
-      const processedUpdates: Partial<Pick<Participant, 'name' | 'color'>> = { ...updates };
+      const processedUpdates: Partial<Pick<Participant, 'name' | 'color' | 'avatarUrl'>> = { ...updates };
       if (updates.color && !isValidColor(updates.color)) {
         processedUpdates.color = getRandomColor();
       } else if (updates.color) {
@@ -87,6 +116,10 @@ export class SupabaseParticipantModel {
         processedUpdates.color = getRandomColor();
       } else if (updates.color) {
         processedUpdates.color = normalizeColor(updates.color);
+      }
+      if (updates.avatarUrl !== undefined) {
+        processedUpdates.avatar_url = updates.avatarUrl;
+        delete processedUpdates.avatarUrl;
       }
 
       const { error } = await supabase
@@ -163,6 +196,7 @@ export class SupabaseParticipantModel {
       contextId: data.context_id,
       name: data.name,
       color: data.color,
+      avatarUrl: data.avatar_url ?? undefined,
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at),
     };

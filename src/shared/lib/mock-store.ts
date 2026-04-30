@@ -115,7 +115,7 @@ export const mockStore = {
     const { participants } = readState();
     return [...participants].sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   },
-  createParticipant(name: string, color: string): Participant {
+  createParticipant(name: string, color: string, avatarUrl?: string): Participant {
     const state = readState();
     const now = new Date();
     const participant: Participant = {
@@ -123,6 +123,7 @@ export const mockStore = {
       contextId: 'mock',
       name,
       color,
+      avatarUrl,
       createdAt: now,
       updatedAt: now,
     };
@@ -130,12 +131,13 @@ export const mockStore = {
     writeState(state);
     return participant;
   },
-  updateParticipant(id: string, updates: Partial<Pick<Participant, 'name' | 'color'>>): boolean {
+  updateParticipant(id: string, updates: Partial<Pick<Participant, 'name' | 'color' | 'avatarUrl'>>): boolean {
     const state = readState();
     const participant = state.participants.find((item) => item.id === id);
     if (!participant) return false;
     if (updates.name) participant.name = updates.name;
     if (updates.color) participant.color = updates.color;
+    if (updates.avatarUrl !== undefined) participant.avatarUrl = updates.avatarUrl;
     participant.updatedAt = new Date();
     writeState(state);
     return true;
