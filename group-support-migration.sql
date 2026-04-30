@@ -59,3 +59,4 @@ BEGIN
   RETURN current_setting('app.current_context_id', true);
 END;
 $$ LANGUAGE plpgsql;
+ALTER FUNCTION get_current_context_id() SET search_path = public, pg_temp;

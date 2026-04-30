@@ -21,6 +21,7 @@ export interface Database {
       users: {
         Row: {
           id: string;
+          auth_user_id: string | null;
           telegram_id: number;
           username: string | null;
           first_name: string | null;
@@ -30,6 +31,7 @@ export interface Database {
         };
         Insert: {
           id?: string;
+          auth_user_id?: string | null;
           telegram_id: number;
           username?: string | null;
           first_name?: string | null;
@@ -39,6 +41,7 @@ export interface Database {
         };
         Update: {
           id?: string;
+          auth_user_id?: string | null;
           telegram_id?: number;
           username?: string | null;
           first_name?: string | null;
@@ -51,6 +54,7 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
+          context_id: string | null;
           name: string;
           color: string;
           created_at: string;
@@ -59,6 +63,7 @@ export interface Database {
         Insert: {
           id?: string;
           user_id: string;
+          context_id?: string | null;
           name: string;
           color?: string;
           created_at?: string;
@@ -67,6 +72,7 @@ export interface Database {
         Update: {
           id?: string;
           user_id?: string;
+          context_id?: string | null;
           name?: string;
           color?: string;
           created_at?: string;
@@ -77,6 +83,7 @@ export interface Database {
         Row: {
           id: string;
           user_id: string;
+          context_id: string | null;
           name: string;
           winner_id: string;
           date: string;
@@ -86,6 +93,7 @@ export interface Database {
         Insert: {
           id?: string;
           user_id: string;
+          context_id?: string | null;
           name: string;
           winner_id: string;
           date?: string;
@@ -95,6 +103,7 @@ export interface Database {
         Update: {
           id?: string;
           user_id?: string;
+          context_id?: string | null;
           name?: string;
           winner_id?: string;
           date?: string;
@@ -107,18 +116,21 @@ export interface Database {
           id: string;
           game_id: string;
           participant_id: string;
+          context_id: string | null;
           created_at: string;
         };
         Insert: {
           id?: string;
           game_id: string;
           participant_id: string;
+          context_id?: string | null;
           created_at?: string;
         };
         Update: {
           id?: string;
           game_id?: string;
           participant_id?: string;
+          context_id?: string | null;
           created_at?: string;
         };
       };
