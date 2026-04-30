@@ -17,6 +17,7 @@ type DbUser = {
 export class AuthService {
   private static currentUser: User | null = null;
   private static currentContext: TelegramContext | null = null;
+  private static isLegacyContextMigrated = false;
 
   private static resolveTelegramId(userId?: number): number {
     if (userId) return userId;
@@ -44,6 +45,49 @@ export class AuthService {
     }
 
     return signInData.user;
+  }
+
+  private static async migrateLegacyContextData(userId: string, context: TelegramContext): Promise<void> {
+    if (this.isLegacyContextMigrated || context.contextType !== 'private') {
+      return;
+    }
+
+    try {
+      const { error: participantsError } = await supabase
+        .from('participants')
+        .update({ context_id: context.contextId })
+        .eq('user_id', userId)
+        .is('context_id', null);
+      if (participantsError) throw participantsError;
+
+      const { error: gamesError } = await supabase
+        .from('games')
+        .update({ context_id: context.contextId })
+        .eq('user_id', userId)
+        .is('context_id', null);
+      if (gamesError) throw gamesError;
+
+      const { data: participantIds, error: participantIdsError } = await supabase
+        .from('participants')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('context_id', context.contextId);
+      if (participantIdsError) throw participantIdsError;
+
+      const ids = participantIds.map((item) => item.id);
+      if (ids.length > 0) {
+        const { error: gameParticipantsError } = await supabase
+          .from('game_participants')
+          .update({ context_id: context.contextId })
+          .is('context_id', null)
+          .in('participant_id', ids);
+        if (gameParticipantsError) throw gameParticipantsError;
+      }
+
+      this.isLegacyContextMigrated = true;
+    } catch (error) {
+      console.error('Error migrating legacy context data:', error);
+    }
   }
 
   static async getCurrentUser(): Promise<User | null> {
@@ -120,6 +164,7 @@ export class AuthService {
       }
 
       this.currentUser = user;
+      await this.migrateLegacyContextData(user.id, context);
       return user;
     } catch (error) {
       console.error('Error authenticating user:', error);
