@@ -1,16 +1,17 @@
-import { useEffect, useState, useMemo } from 'react';
-import { ConfigProvider, theme, Spin, Alert, Button } from 'antd';
-import type { ThemeConfig } from 'antd';
+import { useEffect, useState } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { Layout } from './shared/ui';
 import { MainPage } from './pages/main';
-import { initTelegramWebApp, getTelegramColorScheme, getTelegramThemeParams } from './app/telegram';
+import { initTelegramWebApp, getTelegramColorScheme } from './app/telegram';
 import { AuthService } from './shared/lib/auth';
-import 'antd/dist/reset.css';
+import { Alert, AlertDescription, AlertTitle } from './components/ui/alert';
+import { Button } from './components/ui/button';
+import { Toaster } from './components/ui/sonner';
 
 function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [colorScheme, setColorScheme] = useState<'light' | 'dark'>(() => getTelegramColorScheme());
+  const [, setColorScheme] = useState<'light' | 'dark'>(() => getTelegramColorScheme());
 
   useEffect(() => {
     const initApp = async () => {
@@ -43,77 +44,43 @@ function App() {
     window.location.reload();
   };
 
-  const themeConfig: ThemeConfig = useMemo(() => {
-    const isDark = colorScheme === 'dark';
-    const params = getTelegramThemeParams();
-    return {
-      algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
-      token: {
-        colorPrimary: params.buttonColor,
-        borderRadius: 8,
-        colorBgContainer: params.bgColor,
-        colorBgElevated: params.bgColor,
-        colorText: params.textColor,
-        colorTextSecondary: params.hintColor,
-      },
-    };
-  }, [colorScheme]);
+  if (loading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-3 text-muted-foreground">
+        <RefreshCw className="size-5 animate-spin" />
+        <span>Загрузка приложения...</span>
+      </div>
+    );
+  }
 
-  const configProvider = (
-    <ConfigProvider theme={themeConfig}>
-      {loading ? (
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            height: '100vh',
-            flexDirection: 'column',
-            gap: 16,
-          }}
-        >
-          <Spin size="large" />
-          <div>Загрузка приложения...</div>
-        </div>
-      ) : error ? (
-        <div
-          style={{
-            padding: 24,
-            maxWidth: 600,
-            margin: '50px auto',
-          }}
-        >
-          <Alert
-            message="Ошибка загрузки"
-            description={
-              <div>
-                <p>{error}</p>
-                <p>Возможные причины:</p>
-                <ul>
-                  <li>Не настроены переменные окружения Supabase</li>
-                  <li>Проблемы с подключением к базе данных</li>
-                  <li>Приложение должно работать в Telegram WebApp</li>
-                </ul>
-              </div>
-            }
-            type="error"
-            showIcon
-            action={
-              <Button type="primary" onClick={handleRetry}>
-                Попробовать снова
-              </Button>
-            }
-          />
-        </div>
-      ) : (
-        <Layout>
-          <MainPage />
-        </Layout>
-      )}
-    </ConfigProvider>
+  if (error) {
+    return (
+      <div className="mx-auto mt-10 w-full max-w-xl px-4">
+        <Alert variant="destructive">
+          <AlertTitle>Ошибка загрузки</AlertTitle>
+          <AlertDescription>
+            <p className="mb-3">{error}</p>
+            <p className="mb-2">Возможные причины:</p>
+            <ul className="mb-4 list-disc pl-5">
+              <li>Не настроены переменные окружения Supabase</li>
+              <li>Проблемы с подключением к базе данных</li>
+              <li>Приложение должно работать в Telegram WebApp</li>
+            </ul>
+            <Button onClick={handleRetry}>Попробовать снова</Button>
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Layout>
+        <MainPage />
+      </Layout>
+      <Toaster />
+    </>
   );
-
-  return configProvider;
 }
 
 export default App;

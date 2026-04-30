@@ -1,63 +1,53 @@
 import React, { useState } from 'react';
-import { Button, Input, Form, message } from 'antd';
-import { UserAddOutlined } from '@ant-design/icons';
+import { UserPlus } from 'lucide-react';
 import { ParticipantAdapter } from '../../shared/lib/data-adapter';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 interface AddParticipantProps {
   onSuccess?: () => void;
 }
 
 export const AddParticipant: React.FC<AddParticipantProps> = ({ onSuccess }) => {
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [name, setName] = useState('');
 
-  const handleSubmit = async (values: { name: string }) => {
-    if (!values.name?.trim()) {
-      message.error('Введите имя участника');
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      toast.error('Введите имя участника');
       return;
     }
 
     setLoading(true);
     try {
-      await ParticipantAdapter.create(values.name);
-      message.success('Участник добавлен');
-      form.resetFields();
+      await ParticipantAdapter.create(trimmedName);
+      toast.success('Участник добавлен');
+      setName('');
       onSuccess?.();
-    } catch (error) {
-      message.error('Ошибка при добавлении участника');
+    } catch {
+      toast.error('Ошибка при добавлении участника');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Form
-      form={form}
-      layout="vertical"
-      onFinish={handleSubmit}
-      style={{ width: '100%' }}
-    >
-      <Form.Item
-        name="name"
-        style={{ marginBottom: 12 }}
-        rules={[{ required: true, message: 'Введите имя участника' }]}
-      >
-        <Input
-          placeholder="Имя участника"
-          maxLength={50}
-        />
-      </Form.Item>
-      <Form.Item style={{ marginBottom: 0 }}>
-        <Button
-          type="primary"
-          htmlType="submit"
-          loading={loading}
-          icon={<UserAddOutlined />}
-          block
-        >
-          Добавить участника
-        </Button>
-      </Form.Item>
-    </Form>
+    <form className="pixel-form" onSubmit={handleSubmit}>
+      <label className="pixel-label">Имя участника</label>
+      <Input
+        className="pixel-input"
+        placeholder="Имя участника"
+        maxLength={50}
+        value={name}
+        onChange={(event) => setName(event.target.value)}
+      />
+      <Button type="submit" disabled={loading} className="pixel-button">
+        <UserPlus data-icon="inline-start" />
+        {loading ? 'Добавление...' : 'Добавить участника'}
+      </Button>
+    </form>
   );
 };

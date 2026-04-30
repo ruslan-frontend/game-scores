@@ -1,5 +1,23 @@
 export type TelegramColorScheme = 'light' | 'dark';
 
+const parseDevTelegramId = (): number | null => {
+  const raw = import.meta.env.VITE_DEV_TELEGRAM_ID?.trim();
+  if (!raw) return null;
+
+  const parsed = Number.parseInt(raw, 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    console.warn('VITE_DEV_TELEGRAM_ID must be a positive integer');
+    return null;
+  }
+
+  return parsed;
+};
+
+const getDevContextId = (): string | null => {
+  const raw = import.meta.env.VITE_DEV_CONTEXT_ID?.trim();
+  return raw ? raw : null;
+};
+
 declare global {
   interface Window {
     Telegram: {
@@ -143,6 +161,17 @@ export const getTelegramUser = () => {
   if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
     return window.Telegram.WebApp.initDataUnsafe.user;
   }
+
+  const devTelegramId = parseDevTelegramId();
+  if (devTelegramId) {
+    return {
+      id: devTelegramId,
+      first_name: 'Local',
+      last_name: 'Dev',
+      username: 'local_dev',
+    };
+  }
+
   return null;
 };
 
@@ -175,11 +204,22 @@ export const getTelegramContext = () => {
       chat: chat || null
     };
   }
-  
+
+  const devContextId = getDevContextId();
+  const devTelegramId = parseDevTelegramId();
+  const fallbackContextId = devContextId || (devTelegramId ? String(devTelegramId) : 'default');
+
   return {
-    contextId: 'default',
+    contextId: fallbackContextId,
     contextType: 'private' as const,
-    user: null,
+    user: devTelegramId
+      ? {
+          id: devTelegramId,
+          first_name: 'Local',
+          last_name: 'Dev',
+          username: 'local_dev',
+        }
+      : null,
     chat: null
   };
 };

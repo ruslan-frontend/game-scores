@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Button, message, Space, ColorPicker } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
-import type { Color } from 'antd/es/color-picker';
+import { Pencil } from 'lucide-react';
 import { ParticipantAdapter } from '../../shared/lib/data-adapter';
 import { ParticipantAvatar } from '../../shared/ui';
 import { AVATAR_COLORS } from '../../shared/lib';
 import type { Participant } from '../../shared/types';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 
 interface EditParticipantProps {
@@ -19,139 +21,127 @@ export const EditParticipant: React.FC<EditParticipantProps> = ({
   onSuccess,
   trigger
 }) => {
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [visible, setVisible] = useState(false);
   const [selectedColor, setSelectedColor] = useState(participant.color);
   const [previewName, setPreviewName] = useState(participant.name);
+  const [name, setName] = useState(participant.name);
 
   useEffect(() => {
     if (visible) {
-      form.setFieldsValue({
-        name: participant.name
-      });
+      setName(participant.name);
       setSelectedColor(participant.color);
       setPreviewName(participant.name);
     }
-  }, [visible, participant, form]);
+  }, [visible, participant]);
 
-  const handleSubmit = async (values: { name: string }) => {
-    if (!values.name?.trim()) {
-      message.error('Введите имя участника');
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      toast.error('Введите имя участника');
       return;
     }
 
     setLoading(true);
     try {
       const success = await ParticipantAdapter.update(participant.id, {
-        name: values.name.trim(),
+        name: trimmedName,
         color: selectedColor
       });
       
       if (success) {
-        message.success('Участник обновлен');
+        toast.success('Участник обновлен');
         setVisible(false);
         onSuccess?.();
       } else {
-        message.error('Участник не найден');
+        toast.error('Участник не найден');
       }
-    } catch (error) {
-      message.error('Ошибка при обновлении участника');
+    } catch {
+      toast.error('Ошибка при обновлении участника');
     } finally {
       setLoading(false);
     }
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPreviewName(e.target.value || participant.name);
-  };
-
-  const handleColorChange = (color: Color) => {
-    setSelectedColor(color.toHexString());
+    const value = e.target.value;
+    setName(value);
+    setPreviewName(value || participant.name);
   };
 
   return (
     <>
       <div onClick={() => setVisible(true)}>
         {trigger || (
-          <Button
-            type="text"
-            icon={<EditOutlined />}
-            size="small"
-          />
+          <Button variant="ghost" size="icon-sm" aria-label="Редактировать">
+            <Pencil />
+          </Button>
         )}
       </div>
 
-      <Modal
-        title="Редактировать участника"
-        open={visible}
-        onCancel={() => setVisible(false)}
-        footer={null}
-        width={400}
-        style={{ maxWidth: 'calc(100vw - 32px)' }}
-      >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-        >
-          <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <ParticipantAvatar
-              name={previewName}
-              color={selectedColor}
-              size={64}
-            />
-          </div>
+      <Dialog open={visible} onOpenChange={setVisible}>
+        <DialogContent className="pixel-panel sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Редактировать участника</DialogTitle>
+            <DialogDescription>
+              Обновите имя и цвет аватара участника.
+            </DialogDescription>
+          </DialogHeader>
 
-          <Form.Item
-            name="name"
-            label="Имя участника"
-            rules={[{ required: true, message: 'Введите имя участника' }]}
-          >
-            <Input
-              placeholder="Имя участника"
-              maxLength={50}
-              onChange={handleNameChange}
-            />
-          </Form.Item>
-
-          <Form.Item label="Цвет аватара">
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
-              <ColorPicker
-                value={selectedColor}
-                onChange={handleColorChange}
-                presets={[
-                  {
-                    label: 'Рекомендуемые',
-                    colors: [...AVATAR_COLORS],
-                  },
-                ]}
-                showText
-                size="middle"
+          <form className="pixel-form" onSubmit={handleSubmit}>
+            <div className="flex justify-center">
+              <ParticipantAvatar
+                name={previewName}
+                color={selectedColor}
+                size={64}
               />
-              <span style={{ color: 'var(--tg-theme-hint-color)', fontSize: 13 }}>
-                Выберите цвет
-              </span>
             </div>
-          </Form.Item>
 
-          <Form.Item style={{ marginBottom: 0 }}>
-            <Space style={{ width: '100%', justifyContent: 'flex-end' }} size="middle">
-              <Button onClick={() => setVisible(false)} style={{ minWidth: 100 }}>
+            <div className="pixel-form">
+              <label className="pixel-label">Имя участника</label>
+              <Input
+                className="pixel-input"
+                placeholder="Имя участника"
+                maxLength={50}
+                value={name}
+                onChange={handleNameChange}
+              />
+            </div>
+
+            <div className="pixel-form">
+              <label className="pixel-label">Цвет аватара</label>
+              <input
+                type="color"
+                value={selectedColor}
+                onChange={(event) => setSelectedColor(event.target.value)}
+                className="pixel-input"
+              />
+              <div className="flex flex-wrap gap-2">
+                {AVATAR_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    className="size-7 rounded-full border-2 border-slate-900"
+                    style={{ backgroundColor: color }}
+                    onClick={() => setSelectedColor(color)}
+                    aria-label={`Выбрать цвет ${color}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" className="border-2 border-slate-900" onClick={() => setVisible(false)}>
                 Отмена
               </Button>
-              <Button
-                type="primary"
-                htmlType="submit"
-                loading={loading}
-                style={{ minWidth: 120 }}
-              >
-                Сохранить
+              <Button type="submit" className="pixel-button" disabled={loading}>
+                {loading ? 'Сохранение...' : 'Сохранить'}
               </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Modal>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

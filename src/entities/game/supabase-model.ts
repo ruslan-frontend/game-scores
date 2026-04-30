@@ -1,11 +1,20 @@
 import { supabase } from '../../shared/config/supabase';
 import { AuthService } from '../../shared/lib/auth';
 import { calculateWinPercentage } from '../../shared/lib';
+import { isMockMode, mockStore } from '../../shared/lib/mock-store';
 import { SupabaseParticipantModel } from '../participant/supabase-model';
 import type { Game, GameStatistics, GameByTitle } from '../../shared/types';
 
 export class SupabaseGameModel {
+  private static getWinnerIds(game: Game): string[] {
+    return game.winnerIds?.length ? game.winnerIds : [game.winnerId].filter(Boolean);
+  }
+
   static async getAll(): Promise<Game[]> {
+    if (isMockMode()) {
+      return mockStore.getGames();
+    }
+
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
@@ -30,7 +39,11 @@ export class SupabaseGameModel {
     }
   }
 
-  static async create(name: string, winnerId: string, participantIds: string[]): Promise<Game | null> {
+  static async create(name: string, winnerIds: string[], participantIds: string[]): Promise<Game | null> {
+    if (isMockMode()) {
+      return mockStore.createGame(name.trim(), winnerIds, participantIds);
+    }
+
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
@@ -44,7 +57,8 @@ export class SupabaseGameModel {
           user_id: user.id,
           context_id: context.contextId,
           name: name.trim(),
-          winner_id: winnerId,
+          winner_id: winnerIds[0],
+          winner_ids: winnerIds,
         })
         .select()
         .single();
@@ -75,6 +89,10 @@ export class SupabaseGameModel {
   }
 
   static async getUniqueGameTitles(): Promise<string[]> {
+    if (isMockMode()) {
+      return mockStore.getUniqueGameTitles();
+    }
+
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
@@ -111,7 +129,7 @@ export class SupabaseGameModel {
           game.participants.includes(participant.id)
         );
         
-        const wins = games.filter(game => game.winnerId === participant.id).length;
+        const wins = games.filter(game => this.getWinnerIds(game).includes(participant.id)).length;
         const totalGames = participantGames.length;
 
         return {
@@ -147,7 +165,7 @@ export class SupabaseGameModel {
             game.participants.includes(participant.id)
           );
           
-          const wins = gamesForTitle.filter(game => game.winnerId === participant.id).length;
+          const wins = gamesForTitle.filter(game => this.getWinnerIds(game).includes(participant.id)).length;
           const totalGames = participantGamesForTitle.length;
 
           return {
@@ -172,6 +190,10 @@ export class SupabaseGameModel {
   }
 
   static async delete(id: string): Promise<boolean> {
+    if (isMockMode()) {
+      return mockStore.deleteGame(id);
+    }
+
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
@@ -205,13 +227,17 @@ export class SupabaseGameModel {
 
   private static mapToGame(data: any): Game {
     const participants = data.game_participants?.map((gp: any) => gp.participant_id) || [];
+    const winnerIds: string[] = Array.isArray(data.winner_ids) && data.winner_ids.length > 0
+      ? data.winner_ids
+      : [data.winner_id].filter(Boolean);
     
     return {
       id: data.id,
       contextId: data.context_id,
       name: data.name,
       date: new Date(data.date),
-      winnerId: data.winner_id,
+      winnerId: winnerIds[0],
+      winnerIds,
       participants,
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at),

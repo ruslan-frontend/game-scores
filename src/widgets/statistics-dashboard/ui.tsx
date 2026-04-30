@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Card, Typography, Progress, Tabs, Badge, Space } from 'antd';
-import { TrophyOutlined, TeamOutlined } from '@ant-design/icons';
+import { Trophy, Users } from 'lucide-react';
 import { GameAdapter, ParticipantAdapter } from '../../shared/lib/data-adapter';
 import { ParticipantAvatar } from '../../shared/ui';
 import type { GameStatistics, GameByTitle } from '../../shared/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 
 interface StatisticsDashboardProps {
   refreshTrigger?: number;
@@ -32,172 +36,194 @@ export const StatisticsDashboard: React.FC<StatisticsDashboardProps> = ({ refres
     loadStatistics();
   }, [refreshTrigger]);
 
-  const generalColumns = [
-    {
-      title: 'Участник',
-      key: 'participantName',
-      render: (_: unknown, record: GameStatistics) => {
-        const participant = participants.get(record.participantId);
-        return (
-          <Space>
-            {participant && (
-              <ParticipantAvatar
-                name={participant.name}
-                color={participant.color}
-                size={32}
-              />
-            )}
-            <span>{record.participantName}</span>
-          </Space>
-        );
-      },
-    },
-    {
-      title: 'Игр сыграно',
-      dataIndex: 'totalGames',
-      key: 'totalGames',
-      width: 120,
-    },
-    {
-      title: 'Побед',
-      dataIndex: 'wins',
-      key: 'wins',
-      width: 80,
-    },
-    {
-      title: 'Процент побед',
-      key: 'winPercentage',
-      width: 150,
-      render: (_: unknown, record: GameStatistics) => (
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          <Progress
-            percent={record.winPercentage}
-            size="small"
-            style={{ flex: 1, marginRight: 8 }}
-            format={(percent) => `${percent}%`}
-          />
-        </div>
-      ),
-    },
-  ];
-
-  const gameColumns = [
-    {
-      title: 'Участник',
-      key: 'participantName',
-      render: (_: unknown, record: GameStatistics) => {
-        const participant = participants.get(record.participantId);
-        return (
-          <Space>
-            {participant && (
-              <ParticipantAvatar
-                name={participant.name}
-                color={participant.color}
-                size={24}
-              />
-            )}
-            <span>{record.participantName}</span>
-          </Space>
-        );
-      },
-    },
-    {
-      title: 'Игр',
-      dataIndex: 'totalGames',
-      key: 'totalGames',
-      width: 80,
-    },
-    {
-      title: 'Побед',
-      dataIndex: 'wins',
-      key: 'wins',
-      width: 80,
-    },
-    {
-      title: 'Процент',
-      key: 'winPercentage',
-      width: 120,
-      render: (_: unknown, record: GameStatistics) => (
-        <Progress
-          percent={record.winPercentage}
-          size="small"
-          format={(percent) => `${percent}%`}
-        />
-      ),
-    },
-  ];
-
-  const tabItems = [
-    {
-      key: 'general',
-      label: (
-        <span>
-          <TeamOutlined />
-          Общая
-        </span>
-      ),
-      children: statistics.length === 0 ? (
-        <Typography.Text type="secondary">
-          Статистика будет доступна после добавления игр
-        </Typography.Text>
-      ) : (
-        <Table
-          dataSource={statistics}
-          columns={generalColumns}
-          rowKey="participantId"
-          pagination={false}
-          size="small"
-        />
-      ),
-    },
-    {
-      key: 'byGames',
-      label: (
-        <span>
-          <TrophyOutlined />
-          По играм
-        </span>
-      ),
-      children: gameStatistics.length === 0 ? (
-        <Typography.Text type="secondary">
-          Статистика по играм будет доступна после добавления игр
-        </Typography.Text>
-      ) : (
-        <div>
-          {gameStatistics.map((gameStats) => (
-            <Card
-              key={gameStats.gameName}
-              size="small"
-              style={{ marginBottom: 16 }}
-              title={
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span>{gameStats.gameName}</span>
-                  <Badge count={gameStats.gamesCount} showZero color="#108ee9" />
-                </div>
-              }
-            >
-              <Table
-                dataSource={gameStats.participants}
-                columns={gameColumns}
-                rowKey="participantId"
-                pagination={false}
-                size="small"
-                showHeader={gameStats.participants.length > 1}
-              />
-            </Card>
-          ))}
-        </div>
-      ),
-    },
-  ];
-
   return (
-    <Card title={<><TrophyOutlined /> Статистика</>} style={{ marginBottom: 0 }}>
-      <Tabs
-        defaultActiveKey="general"
-        items={tabItems}
-        size="small"
-      />
+    <Card className="pixel-panel">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Trophy className="size-4 text-primary" />
+          Статистика
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="mb-4 grid w-full grid-cols-2 border-2 border-slate-900 bg-slate-200">
+            <TabsTrigger value="general" className="gap-1.5 font-semibold">
+              <Users />
+              Общая
+            </TabsTrigger>
+            <TabsTrigger value="byGames" className="gap-1.5 font-semibold">
+              <Trophy />
+              По играм
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="general">
+            {statistics.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Статистика будет доступна после добавления игр
+              </p>
+            ) : (
+              <>
+              <div className="overflow-x-auto rounded-md border-2 border-slate-900 bg-white hidden md:block">
+                <Table className="table-fixed min-w-[620px]">
+                  <TableHeader>
+                    <TableRow className="bg-slate-100">
+                      <TableHead className="w-[44%] whitespace-normal text-xs font-bold uppercase">Участник</TableHead>
+                      <TableHead className="w-[16%] whitespace-normal text-xs font-bold uppercase">Игр</TableHead>
+                      <TableHead className="w-[16%] whitespace-normal text-xs font-bold uppercase">Побед</TableHead>
+                      <TableHead className="w-[24%] whitespace-normal text-xs font-bold uppercase">Процент побед</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {statistics.map((record) => {
+                      const participant = participants.get(record.participantId);
+                      return (
+                        <TableRow key={record.participantId}>
+                          <TableCell className="whitespace-normal">
+                            <div className="flex items-center gap-2">
+                              {participant && (
+                                <ParticipantAvatar
+                                  name={participant.name}
+                                  color={participant.color}
+                                  size={28}
+                                />
+                              )}
+                              <span className="font-semibold">{record.participantName}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-base font-semibold">{record.totalGames}</TableCell>
+                          <TableCell className="text-base font-semibold">{record.wins}</TableCell>
+                          <TableCell className="whitespace-normal">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <Progress value={record.winPercentage} className="h-2 w-full max-w-24" />
+                              <span className="text-xs font-semibold text-muted-foreground">{record.winPercentage}%</span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              <div className="grid gap-2 md:hidden">
+                {statistics.map((record) => {
+                  const participant = participants.get(record.participantId);
+                  return (
+                    <div key={record.participantId} className="rounded-md border-2 border-slate-900 bg-white p-3">
+                      <div className="mb-2 flex items-center gap-2">
+                        {participant && (
+                          <ParticipantAvatar
+                            name={participant.name}
+                            color={participant.color}
+                            size={24}
+                          />
+                        )}
+                        <span className="font-semibold">{record.participantName}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div><span className="text-muted-foreground">Игр:</span> {record.totalGames}</div>
+                        <div><span className="text-muted-foreground">Побед:</span> {record.wins}</div>
+                        <div><span className="text-muted-foreground">Винрейт:</span> {record.winPercentage}%</div>
+                      </div>
+                      <Progress value={record.winPercentage} className="mt-2 h-2" />
+                    </div>
+                  );
+                })}
+              </div>
+              </>
+            )}
+          </TabsContent>
+
+          <TabsContent value="byGames">
+            {gameStatistics.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Статистика по играм будет доступна после добавления игр
+              </p>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {gameStatistics.map((gameStats) => (
+                  <Card key={gameStats.gameName} size="sm" className="pixel-panel">
+                    <CardHeader className="border-b-2 border-slate-900 pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-sm">{gameStats.gameName}</CardTitle>
+                        <Badge variant="secondary" className="border-2 border-slate-900 bg-slate-200 text-slate-900">{gameStats.gamesCount}</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="overflow-x-auto rounded-md border-2 border-slate-900 bg-white hidden md:block">
+                      <Table className="table-fixed min-w-[600px]">
+                        <TableHeader>
+                          <TableRow className="bg-slate-100">
+                            <TableHead className="w-[44%] whitespace-normal text-xs font-bold uppercase">Участник</TableHead>
+                            <TableHead className="w-[16%] whitespace-normal text-xs font-bold uppercase">Игр</TableHead>
+                            <TableHead className="w-[16%] whitespace-normal text-xs font-bold uppercase">Побед</TableHead>
+                            <TableHead className="w-[24%] whitespace-normal text-xs font-bold uppercase">Процент</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {gameStats.participants.map((record) => {
+                            const participant = participants.get(record.participantId);
+                            return (
+                              <TableRow key={record.participantId}>
+                                <TableCell className="whitespace-normal">
+                                  <div className="flex items-center gap-2">
+                                    {participant && (
+                                      <ParticipantAvatar
+                                        name={participant.name}
+                                        color={participant.color}
+                                        size={24}
+                                      />
+                                    )}
+                                    <span className="font-semibold">{record.participantName}</span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-base font-semibold">{record.totalGames}</TableCell>
+                                <TableCell className="text-base font-semibold">{record.wins}</TableCell>
+                                <TableCell className="whitespace-normal">
+                                  <div className="flex min-w-0 items-center gap-2">
+                                    <Progress value={record.winPercentage} className="h-2 w-full max-w-24" />
+                                    <span className="text-xs font-semibold text-muted-foreground">{record.winPercentage}%</span>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                      </div>
+                      <div className="grid gap-2 md:hidden">
+                        {gameStats.participants.map((record) => {
+                          const participant = participants.get(record.participantId);
+                          return (
+                            <div key={record.participantId} className="rounded-md border-2 border-slate-900 bg-white p-3">
+                              <div className="mb-2 flex items-center gap-2">
+                                {participant && (
+                                  <ParticipantAvatar
+                                    name={participant.name}
+                                    color={participant.color}
+                                    size={24}
+                                  />
+                                )}
+                                <span className="font-semibold">{record.participantName}</span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-2 text-xs">
+                                <div><span className="text-muted-foreground">Игр:</span> {record.totalGames}</div>
+                                <div><span className="text-muted-foreground">Побед:</span> {record.wins}</div>
+                                <div><span className="text-muted-foreground">Винрейт:</span> {record.winPercentage}%</div>
+                              </div>
+                              <Progress value={record.winPercentage} className="mt-2 h-2" />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
     </Card>
   );
 };

@@ -22,7 +22,8 @@ export interface Game {
   contextId?: string; // Group or user context
   name: string;
   date: Date;
-  winnerId: string;
+  winnerId: string; // Backward-compatible primary winner (first in winnerIds)
+  winnerIds: string[];
   participants: string[];
   createdAt?: Date;
   updatedAt?: Date;

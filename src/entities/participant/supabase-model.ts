@@ -1,10 +1,15 @@
 import { supabase } from '../../shared/config/supabase';
 import { AuthService } from '../../shared/lib/auth';
 import { getRandomColor, isValidColor, normalizeColor } from '../../shared/lib';
+import { isMockMode, mockStore } from '../../shared/lib/mock-store';
 import type { Participant } from '../../shared/types';
 
 export class SupabaseParticipantModel {
   static async getAll(): Promise<Participant[]> {
+    if (isMockMode()) {
+      return mockStore.getParticipants();
+    }
+
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
@@ -27,6 +32,11 @@ export class SupabaseParticipantModel {
   }
 
   static async create(name: string, color?: string): Promise<Participant | null> {
+    if (isMockMode()) {
+      const validatedColor = color && isValidColor(color) ? normalizeColor(color) : getRandomColor();
+      return mockStore.createParticipant(name.trim(), validatedColor);
+    }
+
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
@@ -55,6 +65,16 @@ export class SupabaseParticipantModel {
   }
 
   static async update(id: string, updates: Partial<Pick<Participant, 'name' | 'color'>>): Promise<boolean> {
+    if (isMockMode()) {
+      const processedUpdates: Partial<Pick<Participant, 'name' | 'color'>> = { ...updates };
+      if (updates.color && !isValidColor(updates.color)) {
+        processedUpdates.color = getRandomColor();
+      } else if (updates.color) {
+        processedUpdates.color = normalizeColor(updates.color);
+      }
+      return mockStore.updateParticipant(id, processedUpdates);
+    }
+
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
@@ -85,6 +105,10 @@ export class SupabaseParticipantModel {
   }
 
   static async delete(id: string): Promise<boolean> {
+    if (isMockMode()) {
+      return mockStore.deleteParticipant(id);
+    }
+
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');
@@ -107,6 +131,10 @@ export class SupabaseParticipantModel {
   }
 
   static async findById(id: string): Promise<Participant | null> {
+    if (isMockMode()) {
+      return mockStore.findParticipantById(id);
+    }
+
     try {
       const user = await AuthService.getCurrentUser();
       if (!user) throw new Error('User not authenticated');

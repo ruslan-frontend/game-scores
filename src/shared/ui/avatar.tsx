@@ -5,12 +5,13 @@ import { getInitials } from '../lib';
 interface AvatarWrapperProps {
   $color: string;
   $size: number;
+  $shape: 'circle' | 'square';
 }
 
 const AvatarWrapper = styled.div<AvatarWrapperProps>`
   width: ${props => props.$size}px;
   height: ${props => props.$size}px;
-  border-radius: 50%;
+  border-radius: ${props => (props.$shape === 'square' ? '8px' : '50%')};
   background-color: ${props => props.$color};
   display: flex;
   align-items: center;
@@ -26,6 +27,7 @@ interface ParticipantAvatarProps {
   name: string;
   color: string;
   size?: number;
+  shape?: 'circle' | 'square';
   className?: string;
 }
 
@@ -33,12 +35,14 @@ export const ParticipantAvatar: React.FC<ParticipantAvatarProps> = ({
   name,
   color,
   size = 40,
+  shape = 'circle',
   className
 }) => {
   return (
     <AvatarWrapper 
       $color={color} 
       $size={size} 
+      $shape={shape}
       className={className}
     >
       {getInitials(name)}

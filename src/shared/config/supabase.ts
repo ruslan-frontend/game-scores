@@ -86,6 +86,7 @@ export interface Database {
           context_id: string | null;
           name: string;
           winner_id: string;
+          winner_ids: string[];
           date: string;
           created_at: string;
           updated_at: string;
@@ -96,6 +97,7 @@ export interface Database {
           context_id?: string | null;
           name: string;
           winner_id: string;
+          winner_ids?: string[];
           date?: string;
           created_at?: string;
           updated_at?: string;
@@ -106,6 +108,7 @@ export interface Database {
           context_id?: string | null;
           name?: string;
           winner_id?: string;
+          winner_ids?: string[];
           date?: string;
           created_at?: string;
           updated_at?: string;
