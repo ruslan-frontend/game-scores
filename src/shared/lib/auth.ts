@@ -1,7 +1,6 @@
 import { supabase } from '../config/supabase';
 import { getTelegramUser, getTelegramContext } from '../../app/telegram';
 import type { User, TelegramContext } from '../types';
-import type { User as SupabaseAuthUser } from '@supabase/supabase-js';
 
 type DbUser = {
   id: string;
@@ -31,20 +30,30 @@ export class AuthService {
     return 12345;
   }
 
-  private static async ensureSupabaseSession(): Promise<SupabaseAuthUser> {
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError) throw sessionError;
+  /**
+   * Try to get or create a Supabase session.
+   * Returns auth user id string if successful, null if anonymous auth is disabled
+   * or unavailable. In that case the app falls back to anon-key + RLS anon policies.
+   */
+  private static async tryGetAuthUserId(): Promise<string | null> {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session?.user) {
+        return sessionData.session.user.id;
+      }
 
-    if (sessionData.session?.user) {
-      return sessionData.session.user;
+      const { data: signInData, error: signInError } = await supabase.auth.signInAnonymously();
+      if (signInError) {
+        // Anonymous auth may be disabled in the project — that's OK,
+        // we fall through and use the anon key with permissive RLS policies.
+        console.warn('Anonymous sign-in unavailable, using anon key directly:', signInError.message);
+        return null;
+      }
+
+      return signInData.user?.id ?? null;
+    } catch {
+      return null;
     }
-
-    const { data: signInData, error: signInError } = await supabase.auth.signInAnonymously();
-    if (signInError || !signInData.user) {
-      throw signInError || new Error('Failed to create anonymous Supabase session');
-    }
-
-    return signInData.user;
   }
 
   private static async migrateLegacyContextData(userId: string, context: TelegramContext): Promise<void> {
@@ -96,16 +105,15 @@ export class AuthService {
     }
 
     try {
-      const authUser = await this.ensureSupabaseSession();
-
-      // Получаем контекст Telegram
       const context = getTelegramContext();
       this.currentContext = context;
-      
+
       const telegramUser = context.user;
       const resolvedTelegramId = this.resolveTelegramId(telegramUser?.id);
-      
-      // Проверяем существует ли пользователь в базе
+
+      // Try to get a Supabase auth session (may be null if anonymous auth is disabled).
+      const authUserId = await this.tryGetAuthUserId();
+
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('*')
@@ -120,38 +128,48 @@ export class AuthService {
       let user: User;
 
       if (existingUser) {
-        if (existingUser.auth_user_id && existingUser.auth_user_id !== authUser.id) {
+        // Guard: don't let a different session claim an already-owned account.
+        if (authUserId && existingUser.auth_user_id && existingUser.auth_user_id !== authUserId) {
           throw new Error('Current Supabase session is not allowed to access this Telegram user');
+        }
+
+        const updatePayload: Record<string, unknown> = {
+          username: telegramUser?.username || existingUser.username || 'user',
+          first_name: telegramUser?.first_name || existingUser.first_name || 'User',
+          last_name: telegramUser?.last_name || existingUser.last_name || null,
+        };
+        if (authUserId) {
+          updatePayload.auth_user_id = authUserId;
         }
 
         const { data: updatedUser, error: updateError } = await supabase
           .from('users')
-          .update({
-            auth_user_id: authUser.id,
-            username: telegramUser?.username || existingUser.username || 'test_user',
-            first_name: telegramUser?.first_name || existingUser.first_name || 'Test',
-            last_name: telegramUser?.last_name || existingUser.last_name || 'User',
-          })
+          .update(updatePayload)
           .eq('id', existingUser.id)
           .select()
           .single();
 
         if (updateError) {
-          console.error('Error updating user auth link:', updateError);
-          throw updateError;
+          console.error('Error updating user:', updateError);
+          // Non-fatal: use the existing record as-is.
+          user = this.mapToUser(existingUser);
+        } else {
+          user = this.mapToUser(updatedUser);
+        }
+      } else {
+        const insertPayload: Record<string, unknown> = {
+          telegram_id: resolvedTelegramId,
+          username: telegramUser?.username || 'user',
+          first_name: telegramUser?.first_name || 'User',
+          last_name: telegramUser?.last_name || null,
+        };
+        if (authUserId) {
+          insertPayload.auth_user_id = authUserId;
         }
 
-        user = this.mapToUser(updatedUser);
-      } else {
         const { data: newUser, error: createError } = await supabase
           .from('users')
-          .insert({
-            auth_user_id: authUser.id,
-            telegram_id: resolvedTelegramId,
-            username: telegramUser?.username || 'test_user',
-            first_name: telegramUser?.first_name || 'Test',
-            last_name: telegramUser?.last_name || 'User',
-          })
+          .insert(insertPayload)
           .select()
           .single();
 
