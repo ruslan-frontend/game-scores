@@ -1,17 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Input, Form, Select, message, Checkbox, Tag, Space } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Plus } from 'lucide-react';
 import { GameAdapter, ParticipantAdapter } from '../../shared/lib/data-adapter';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 
 interface AddGameProps {
   onSuccess?: () => void;
 }
 
 export const AddGame: React.FC<AddGameProps> = ({ onSuccess }) => {
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-  const [participants, setParticipants] = useState<any[]>([]);
+  const [participants, setParticipants] = useState<Array<{ id: string; name: string }>>([]);
   const [gameTitles, setGameTitles] = useState<string[]>([]);
+  const [name, setName] = useState('');
+  const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
+  const [winnerIds, setWinnerIds] = useState<string[]>([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -25,139 +31,157 @@ export const AddGame: React.FC<AddGameProps> = ({ onSuccess }) => {
     loadData();
   }, []);
   const [customGameName, setCustomGameName] = useState('');
+  const hasGameName = Boolean((name || customGameName).trim());
 
   const handleGameTitleSelect = (title: string) => {
-    form.setFieldsValue({ name: title });
+    setName(title);
     setCustomGameName(title);
   };
 
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value;
-    setCustomGameName(v);
-    form.setFieldsValue({ name: v });
+  const toggleParticipant = (participantId: string, checked: boolean) => {
+    setSelectedParticipants((prev) => {
+      const next = checked ? [...prev, participantId] : prev.filter((id) => id !== participantId);
+      setWinnerIds((current) => current.filter((winnerId) => next.includes(winnerId)));
+      return next;
+    });
   };
 
-  const handleSubmit = async (values: { 
-    name: string; 
-    winnerId: string; 
-    participants: string[];
-  }) => {
-    const gameName = values.name || customGameName;
+  const toggleWinner = (participantId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedParticipants((prev) =>
+        prev.includes(participantId) ? prev : [...prev, participantId],
+      );
+    }
+
+    setWinnerIds((prev) => {
+      if (!checked) return prev.filter((id) => id !== participantId);
+      if (prev.length >= 3) {
+        toast.error('Можно выбрать максимум 3 победителей');
+        return prev;
+      }
+      return prev.includes(participantId) ? prev : [...prev, participantId];
+    });
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const gameName = name || customGameName;
     if (!gameName?.trim()) {
-      message.error('Введите название игры');
+      toast.error('Введите название игры');
       return;
     }
 
-    if (!values.winnerId) {
-      message.error('Выберите победителя');
+    if (!winnerIds.length) {
+      toast.error('Выберите хотя бы одного победителя');
       return;
     }
 
-    if (!values.participants?.length) {
-      message.error('Выберите участников');
+    if (winnerIds.length > 3) {
+      toast.error('Можно выбрать максимум 3 победителей');
       return;
     }
 
-    if (!values.participants.includes(values.winnerId)) {
-      message.error('Победитель должен быть среди участников');
+    if (!selectedParticipants.length) {
+      toast.error('Выберите участников');
+      return;
+    }
+
+    const hasOutsiderWinner = winnerIds.some((winnerId) => !selectedParticipants.includes(winnerId));
+    if (hasOutsiderWinner) {
+      toast.error('Победители должны быть среди участников');
       return;
     }
 
     setLoading(true);
     try {
-      await GameAdapter.create(gameName, values.winnerId, values.participants);
-      message.success('Игра добавлена');
-      form.resetFields();
+      await GameAdapter.create(gameName, winnerIds, selectedParticipants);
+      toast.success('Игра добавлена');
+      setName('');
       setCustomGameName('');
+      setSelectedParticipants([]);
+      setWinnerIds([]);
       onSuccess?.();
-    } catch (error) {
-      message.error('Ошибка при добавлении игры');
+    } catch {
+      toast.error('Ошибка при добавлении игры');
     } finally {
       setLoading(false);
     }
   };
 
-  const participantOptions = participants.map(p => ({
-    label: p.name,
-    value: p.id
-  }));
-
   return (
-    <Form
-      form={form}
-      layout="vertical"
-      onFinish={handleSubmit}
-      style={{ width: '100%' }}
-    >
-      <Form.Item label="Название игры">
+    <form className="pixel-form" onSubmit={handleSubmit}>
+      <div className="pixel-form">
+        <label className="pixel-label">Название игры</label>
         {gameTitles.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ marginBottom: 8, fontSize: 13, color: 'var(--tg-theme-hint-color)' }}>
-              Быстрый выбор:
-            </div>
-            <Space size={[8, 8]} wrap>
-              {gameTitles.map((title) => (
-                <Tag
-                  key={title}
-                  style={{ cursor: 'pointer', margin: 0, padding: '8px 14px' }}
-                  onClick={() => handleGameTitleSelect(title)}
-                >
-                  {title}
-                </Tag>
-              ))}
-            </Space>
+          <div className="pixel-chip-list">
+            {gameTitles.map((title) => (
+              <button
+                key={title}
+                type="button"
+                className="pixel-chip"
+                onClick={() => handleGameTitleSelect(title)}
+              >
+                {title}
+              </button>
+            ))}
           </div>
         )}
-        <Form.Item
-          name="name"
-          rules={[{ required: !customGameName, message: 'Введите название игры' }]}
-          style={{ marginBottom: 0 }}
-        >
-          <Input
-            placeholder="Или введите новое название"
-            maxLength={100}
-            value={customGameName}
-            onChange={handleNameChange}
-          />
-        </Form.Item>
-      </Form.Item>
-
-      <Form.Item
-        name="participants"
-        label="Участники"
-        rules={[{ required: true, message: 'Выберите участников' }]}
-      >
-        <Checkbox.Group
-          options={participantOptions}
-          style={{ width: '100%' }}
+        <Input
+          className="pixel-input"
+          placeholder="Введите название игры"
+          maxLength={100}
+          value={name}
+          onChange={(event) => {
+            const value = event.target.value;
+            setName(value);
+            setCustomGameName(value);
+          }}
         />
-      </Form.Item>
+      </div>
 
-      <Form.Item
-        name="winnerId"
-        label="Победитель"
-        rules={[{ required: true, message: 'Выберите победителя' }]}
-      >
-        <Select placeholder="Выберите победителя">
-          {participants.map(participant => (
-            <Select.Option key={participant.id} value={participant.id}>
-              {participant.name}
-            </Select.Option>
-          ))}
-        </Select>
-      </Form.Item>
+      {hasGameName && (
+        <div className="pixel-form">
+          <label className="pixel-label">Участники</label>
+          <div className="pixel-check-group">
+            {participants.map((participant) => (
+              <label key={participant.id} className="pixel-check-item">
+                <Checkbox
+                  checked={selectedParticipants.includes(participant.id)}
+                  onCheckedChange={(checked) => toggleParticipant(participant.id, Boolean(checked))}
+                />
+                <span>{participant.name}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
 
-      <Form.Item style={{ marginBottom: 0 }}>
-        <Button
-          type="primary"
-          htmlType="submit"
-          loading={loading}
-          icon={<PlusOutlined />}
-          block
-        >
-          Добавить игру
-        </Button>
-      </Form.Item>
-    </Form>
+      {hasGameName && selectedParticipants.length > 0 && (
+        <div className="pixel-form">
+          <label className="pixel-label">Победители (1-3)</label>
+          <div className="pixel-check-group">
+            {participants.map((participant) => (
+              <label key={participant.id} className="pixel-check-item">
+                <Checkbox
+                  checked={winnerIds.includes(participant.id)}
+                  onCheckedChange={(checked) => toggleWinner(participant.id, Boolean(checked))}
+                />
+                <span>{participant.name}</span>
+              </label>
+            ))}
+          </div>
+          {winnerIds.length > 1 && (
+            <Badge variant="secondary" className="w-fit border-2 border-slate-900 bg-slate-200 text-slate-900">
+              Ничья: {winnerIds.length} победителя
+            </Badge>
+          )}
+        </div>
+      )}
+
+      <Button type="submit" disabled={loading} className="pixel-button">
+        <Plus data-icon="inline-start" />
+        {loading ? 'Добавление...' : 'Добавить игру'}
+      </Button>
+    </form>
   );
 };
